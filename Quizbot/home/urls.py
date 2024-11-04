@@ -7,4 +7,5 @@ urlpatterns = [
     path('quiz/<str:quiz_type>/', views.quiz_screen, name='quiz_screen'),
     path('quiz/<str:quiz_type>/<int:topic_id>/', views.quiz_screen, name='quiz_screen_topic'),
     path('submit_answer/', views.submit_answer, name='submit_answer'),
+    path('generate-question/', views.generate_question_view, name='generate_question'),
 ]

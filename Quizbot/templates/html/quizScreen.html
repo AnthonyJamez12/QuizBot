@@ -12,48 +12,98 @@
     <div class="container">
         <h1>{{ topic }} Quiz</h1>
         
-        {% if questions %}
-            <div id="quiz-section">
-                {% for question in questions %}
-                    <div class="question" data-question-id="{{ question.id }}">
-                        <p><strong>Question:</strong> {{ question.text }}</p>
-                        
-                        {% if question.question_type == 'MC' or question.question_type == 'TF' %}
-                            <form class="answer-form">
-                                {% for option in question.options.all %}
-                                    <label>
-                                        <input type="radio" name="answer-{{ question.id }}" value="{{ option.id }}">
-                                        {{ option.text }}
-                                    </label>
-                                {% endfor %}
-                                <button type="button" onclick="submitAnswer({{ question.id }})">Submit Answer</button>
-                            </form>
-                        {% elif question.question_type == 'OE' %}
-                            <form class="answer-form">
-                                <textarea name="open_ended_response" rows="3" placeholder="Type your answer here..." style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ddd;"></textarea><br>
-                                <button type="button" onclick="submitAnswer({{ question.id }})">Submit Answer</button>
-                            </form>
-                        {% endif %}
-                        
-                        <p class="feedback" id="feedback-{{ question.id }}"></p>
-                    </div>
-                {% endfor %}
-            </div>
-        {% else %}
-            <p>No questions available for this quiz.</p>
-        {% endif %}
-        
+        <!-- Buttons to generate different types of questions -->
+        <div class="button-group">
+            <button onclick="generateQuestion('MC')">Generate Multiple Choice Question</button>
+            <button onclick="generateQuestion('TF')">Generate True/False Question</button>
+            <button onclick="generateQuestion('OE')">Generate Open-Ended Question</button>
+        </div>
+
+        <div id="quiz-section">
+            {% for question in questions %}
+                <div class="question" data-question-id="{{ question.id }}">
+                    <p><strong>Question:</strong> {{ question.text }}</p>
+                    {% if question.question_type == 'MC' or question.question_type == 'TF' %}
+                        <form class="answer-form">
+                            {% for option in question.options.all %}
+                                <label>
+                                    <input type="radio" name="answer-{{ question.id }}" value="{{ option.id }}">
+                                    {{ option.text }}
+                                </label><br>
+                            {% endfor %}
+                            <button type="button" onclick="submitAnswer({{ question.id }})">Submit Answer</button>
+                        </form>
+                    {% elif question.question_type == 'OE' %}
+                        <form class="answer-form">
+                            <textarea name="open_ended_response" rows="3" placeholder="Type your answer here..."></textarea><br>
+                            <button type="button" onclick="submitAnswer({{ question.id }})">Submit Answer</button>
+                        </form>
+                    {% endif %}
+                    <p class="feedback" id="feedback-{{ question.id }}"></p>
+                </div>
+            {% endfor %}
+        </div>
+
         <a href="{% url 'main_menu' %}" class="back-button">Back to Main Menu</a>
     </div>
 
     <script>
+        // Function to generate a question of a specified type (MC, TF, OE)
+        function generateQuestion(type) {
+            $.ajax({
+                url: "{% url 'generate_question' %}",
+                type: "POST",
+                data: { question_type: type },
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                success: function(response) {
+                    const newQuestion = response.new_question;
+                    let newQuestionHTML = `
+                        <div class="question" data-question-id="${newQuestion.id}">
+                            <p><strong>Question:</strong> ${newQuestion.text}</p>`;
+
+                    // Add options for MC and TF questions
+                    if (type === 'MC' || type === 'TF') {
+                        newQuestionHTML += `<form class="answer-form">`;
+                        newQuestion.options.forEach(option => {
+                            newQuestionHTML += `
+                                <label>
+                                    <input type="radio" name="answer-${newQuestion.id}" value="${option.id}">
+                                    ${option.text}
+                                </label><br>`;
+                        });
+                        newQuestionHTML += `
+                            <button type="button" onclick="submitAnswer(${newQuestion.id})">Submit Answer</button>
+                        </form>`;
+                    } 
+                    // Add textarea for open-ended questions
+                    else if (type === 'OE') {
+                        newQuestionHTML += `
+                        <form class="answer-form">
+                            <textarea name="open_ended_response" rows="3" placeholder="Type your answer here..."></textarea><br>
+                            <button type="button" onclick="submitAnswer(${newQuestion.id})">Submit Answer</button>
+                        </form>`;
+                    }
+                    
+                    // Add feedback section and close div
+                    newQuestionHTML += `<p class="feedback" id="feedback-${newQuestion.id}"></p></div>`;
+
+                    // Append the new question to the quiz section
+                    $('#quiz-section').append(newQuestionHTML);
+                },
+                error: function() {
+                    alert("Error generating a new question.");
+                }
+            });
+        }
+
+        // Function to submit the answer and receive feedback
         function submitAnswer(questionId) {
             const questionElement = document.querySelector(`.question[data-question-id="${questionId}"]`);
             const feedbackElement = document.getElementById(`feedback-${questionId}`);
-            let data = {
-                'question_id': questionId,
-            };
-            
+            let data = { 'question_id': questionId };
+
             const answerForm = questionElement.querySelector('.answer-form');
             const selectedOption = answerForm.querySelector(`input[name="answer-${questionId}"]:checked`);
             const openEndedResponse = answerForm.querySelector('textarea[name="open_ended_response"]');

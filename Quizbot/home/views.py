@@ -27,82 +27,8 @@ def topic_menu_screen(request):
 
 
 
-def quiz_screen(request, quiz_type, topic_id=None):
-    # Set topic name based on quiz type and topic_id
-    topic_text = "general knowledge in network security"
-    topic = None
-    if quiz_type == 'focused' and topic_id:
-        topic = get_object_or_404(Topic, id=topic_id)
-        topic_text = topic.name
 
-    # Generate embedding for the topic
-    query_embedding = embed_text(topic_text)
-    print(f"Generated embedding for topic '{topic_text}': {query_embedding}")
 
-    # Search vector DB for relevant content
-    results, _ = vector_db.search(query_embedding, k=1)
-    print(f"Vector DB search results for '{topic_text}': {results}")
-
-    # Load content from metadata based on results, fallback if none found
-    metadata = load_metadata()
-    context_text = " ".join(
-        metadata.get(str(result), {}).get('content', '') for result in results if result != -1
-    ) or "Fundamental concepts in network security."
-
-    # Generate a new quiz question with options
-    prompt = (
-        f"Create a multiple choice quiz question on the topic: '{topic_text}'. "
-        "Include four options labeled A, B, C, and D, and specify the correct answer at the end. "
-        "Format: 'Question: {question text} A) {option 1} B) {option 2} C) {option 3} D) {option 4} "
-        "The correct answer is {correct option}.'"
-    )
-    generated_text = generate_question(prompt)
-    print(f"Generated text: {generated_text}")
-
-    # Parse the generated response to extract the question and options
-    question_text = ""
-    options = []
-    correct_option_letter = ""
-
-    try:
-        # Extract question and options from the generated text
-        question_text = generated_text.split("Question:")[1].split("A)")[0].strip()
-        options = [
-            ("A", generated_text.split("A)")[1].split("B)")[0].strip()),
-            ("B", generated_text.split("B)")[1].split("C)")[0].strip()),
-            ("C", generated_text.split("C)")[1].split("D)")[0].strip()),
-            ("D", generated_text.split("D)")[1].split("The correct answer is")[0].strip()),
-        ]
-        correct_option_letter = generated_text.split("The correct answer is")[1].strip()[0]
-
-    except IndexError as e:
-        print(f"Error parsing generated question: {e}")
-        question_text = "Unable to generate a valid question."
-
-    # Create the QuizQuestion instance
-    new_question = QuizQuestion.objects.create(
-        text=question_text,
-        question_type="MC",
-        topic=topic
-    )
-
-    # Create AnswerOption instances for each option
-    for letter, option_text in options:
-        is_correct = (letter == correct_option_letter)
-        AnswerOption.objects.create(
-            question=new_question,
-            text=option_text,
-            is_correct=is_correct
-        )
-
-    # Display the new question on the quiz screen
-    questions = [new_question]
-
-    return render(request, 'html/quizScreen.html', {
-        'questions': questions,
-        'quiz_type': quiz_type,
-        'topic': topic_text if topic else "General"
-    })
 
 
 
@@ -183,3 +109,152 @@ def topic_quiz(request, topic):
         'questions': all_questions
     }
     return render(request, 'html/quizScreen.html', context)
+
+
+def quiz_screen(request, quiz_type, topic_id=None):
+    # Set topic name based on quiz type and topic_id
+    topic_text = "general knowledge in network security"
+    topic = None
+
+    # Check if the quiz is focused and fetch the specific topic
+    if quiz_type == 'focused' and topic_id:
+        topic = get_object_or_404(Topic, id=topic_id)
+        topic_text = topic.name
+        # Fetch questions filtered by the specific topic
+        questions = list(QuizQuestion.objects.filter(topic=topic)[:5])  # Adjust limit as needed
+    else:
+        # General quiz: Fetch questions not associated with a specific topic
+        questions = list(QuizQuestion.objects.filter(topic__isnull=True)[:5])  # Adjust limit as needed
+
+    # Render the quiz screen with existing questions
+    return render(request, 'html/quizScreen.html', {
+        'questions': questions,
+        'quiz_type': quiz_type,
+        'topic': topic_text if topic else "General"
+    })
+
+
+
+def generate_and_save_question(topic, topic_text, question_type="MC"):
+    # Set up the prompt based on the question type
+    print('question_type', question_type)
+    if question_type == "MC":
+        prompt = (
+            f"Create a multiple choice quiz question on the topic: '{topic_text}'. "
+            "Include four options labeled A, B, C, and D, and specify the correct answer at the end. "
+            "Format: 'Question: {question text} A) {option 1} B) {option 2} C) {option 3} D) {option 4} "
+            "The correct answer is {correct option}.'"
+        )
+    elif question_type == "TF":
+        prompt = (
+            f"Create a single True/False question on the topic: '{topic_text}'. "
+            "Provide the question text and the correct answer as either True or False. "
+            "Only give one question in this format: 'Question: {question text} The correct answer is {True/False}.'"
+        )
+    elif question_type == "OE":
+        prompt = (
+            f"Create an open-ended question on the topic: '{topic_text}'. "
+            "Provide the question text without any answer options."
+        )
+
+    generated_text = generate_question(prompt)
+    print('Generated text:', generated_text)
+
+    question_text = ""
+    options = []
+    correct_option_letter = ""
+
+    # Parse the generated question based on the type
+    if question_type == "MC":
+        try:
+            question_text = generated_text.split("Question:")[1].split("A)")[0].strip()
+            options = [
+                ("A", generated_text.split("A)")[1].split("B)")[0].strip()),
+                ("B", generated_text.split("B)")[1].split("C)")[0].strip()),
+                ("C", generated_text.split("C)")[1].split("D)")[0].strip()),
+                ("D", generated_text.split("D)")[1].split("The correct answer is")[0].strip()),
+            ]
+            correct_option_letter = generated_text.split("The correct answer is")[1].strip()[0]
+        except IndexError as e:
+            print(f"Error parsing generated MC question: {e}")
+            question_text = "Unable to generate a valid question."
+
+    elif question_type == "TF":
+        try:
+            question_text = generated_text.split("Question:")[1].split("The correct answer is")[0].strip()
+            correct_answer = generated_text.split("The correct answer is")[1].strip().capitalize()
+            options = [("True", correct_answer == "True"), ("False", correct_answer == "False")]
+        except IndexError as e:
+            print(f"Error parsing generated TF question: {e}")
+            question_text = "Unable to generate a valid question."
+
+    elif question_type == "OE":
+        try:
+            # Look for the main question text after the initial "Here's your open-ended question:" or "Question:"
+            if "Here's your open-ended question:" in generated_text:
+                question_text = generated_text.split("Here's your open-ended question:")[1].strip()
+            elif "Question:" in generated_text:
+                question_text = generated_text.split("Question:")[1].strip()
+            else:
+                # Fallback if no clear separator is found; use the whole generated text as the question
+                question_text = generated_text.strip()
+
+            # Optionally, remove any extraneous instructions, e.g., "Please provide your response in..."
+            if "Please provide your response" in question_text:
+                question_text = question_text.split("Please provide your response")[0].strip()
+
+        except IndexError as e:
+            print(f"Error parsing generated OE question: {e}")
+            question_text = "Unable to generate a valid question."
+
+
+    # Create the QuizQuestion instance
+    new_question = QuizQuestion.objects.create(
+        text=question_text,
+        question_type=question_type,
+        topic=topic
+    )
+
+    # Create AnswerOption instances for each option (if applicable)
+    if question_type == "MC":
+        for letter, option_text in options:
+            is_correct = (letter == correct_option_letter)
+            AnswerOption.objects.create(
+                question=new_question,
+                text=option_text,
+                is_correct=is_correct
+            )
+    elif question_type == "TF":
+        for option_text, is_correct in options:
+            AnswerOption.objects.create(
+                question=new_question,
+                text=option_text,
+                is_correct=is_correct
+            )
+
+    return new_question
+
+
+
+
+
+
+def generate_question_view(request):
+    question_type = request.POST.get("question_type")
+    topic_text = "general knowledge in network security"  # Example topic, adjust as needed
+    topic, _ = Topic.objects.get_or_create(name=topic_text)
+
+    # Generate a question based on the requested type
+    new_question = generate_and_save_question(topic, topic_text, question_type=question_type)
+
+    # Prepare response data
+    response_data = {
+        'new_question': {
+            'id': new_question.id,
+            'text': new_question.text,
+            'options': [
+                {'id': option.id, 'text': option.text} for option in new_question.options.all()
+            ] if question_type != "OE" else []  # Open-ended questions don't have options
+        }
+    }
+    return JsonResponse(response_data)

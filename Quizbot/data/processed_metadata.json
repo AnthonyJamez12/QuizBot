@@ -8,5 +8,40 @@
         "last_modified": 1730687991.4386668,
         "file_id": 95622615,
         "content": "Know Your Threat Model\u2022Threat model:A model of who your attacker is and what resources they have\u2022One of the best ways to counter an attacker is to attack their reasonsStory\u2026\u2022The bear race\u2022Takeaway:Eve"
+    },
+    "Lecture_5_slides.pdf": {
+        "last_modified": 1730705742.427752,
+        "file_id": 58383596,
+        "content": "Symmetric Encryption and Message ConfidentialityChapter 2Model for network security\nModel for network security\u2022Using this model requires us to:\u2022design a suitable algorithm for the security transformat"
+    },
+    "Lecture_6_slides.pdf": {
+        "last_modified": 1730705754.2022934,
+        "file_id": 34005777,
+        "content": "A strong encryption algorithm\nattackerencryption algorithmplaintext / enquirycyphertext / response\nSecure Encryption Scheme\u2022Unconditional security\u2022no matter how much computer power is available, the c"
+    },
+    "Lecture_7_slides.pdf": {
+        "last_modified": 1730705767.5596893,
+        "file_id": 67427185,
+        "content": "Symmetric Block EncryptionBlock cipher\u2022the most commonly used symmetric encryption algorithms\u2022input: fixed-size blocks (Typically 64, 128 bit blocks), output: equal size blocks\u2022provide secrecy and/or "
+    },
+    "Lecture_10_slides.pdf": {
+        "last_modified": 1730705848.9701219,
+        "file_id": 45135811,
+        "content": "Random and Pseudorandom NumbersWhen to use random numbers?\u2022Generation of a stream key for symmetric stream cipher \u2022Generation of keys for public-key algorithms\u2022RSA public-key encryption algorithm (des"
+    },
+    "Lecture_8_slides.pdf": {
+        "last_modified": 1730705829.781782,
+        "file_id": 84714823,
+        "content": "Feistel Encryption and Decryption \nDES encryption\n\u202264 bits plaintext\u202256 bits effectivekey lengthDES Weakness\u2022short length key (56 bits) is not secure enough. Brutal force search takes short time. Trip"
+    },
+    "Lecture_9_slides.pdf": {
+        "last_modified": 1730705839.7939851,
+        "file_id": 30451323,
+        "content": "AES Specification\u2022symmetric block cipher \u2022128-bit data, 128/192/256-bit keys \u2022stronger & faster than Triple-DES \u2022provide full specification & design details \u2022both C & Java implementations\u2022NIST have re"
+    },
+    "Network_Security_Notes.pdf": {
+        "last_modified": 1730706197.5289896,
+        "file_id": 4602169,
+        "content": "Network\nSecurity\nBasics\n1.\nNetwork\nSecurity\n:\n\u25cb\nNetwork\nsecurity\ninvolves\nthe\npolicies,\npractices,\nand\ntechnologies\ndesigned\nto\nprotect\nnetworked\nsystems\nand\ndata\nfrom\nunauthorized\naccess,\nmisuse,\nor\n"
     }
 }
