@@ -136,7 +136,6 @@ def quiz_screen(request, quiz_type, topic_id=None):
 
 
 def generate_and_save_question(topic, topic_text, question_type="MC"):
-    # Set up the prompt based on the question type
     print('question_type', question_type)
     if question_type == "MC":
         prompt = (
@@ -182,31 +181,25 @@ def generate_and_save_question(topic, topic_text, question_type="MC"):
     elif question_type == "TF":
         try:
             question_text = generated_text.split("Question:")[1].split("The correct answer is")[0].strip()
-            correct_answer = generated_text.split("The correct answer is")[1].strip().capitalize()
-            options = [("True", correct_answer == "True"), ("False", correct_answer == "False")]
+            correct_answer = generated_text.split("The correct answer is")[1].strip().lower()
+            options = [("True", correct_answer == "true"), ("False", correct_answer == "false")]
         except IndexError as e:
             print(f"Error parsing generated TF question: {e}")
             question_text = "Unable to generate a valid question."
 
     elif question_type == "OE":
         try:
-            # Look for the main question text after the initial "Here's your open-ended question:" or "Question:"
             if "Here's your open-ended question:" in generated_text:
                 question_text = generated_text.split("Here's your open-ended question:")[1].strip()
             elif "Question:" in generated_text:
                 question_text = generated_text.split("Question:")[1].strip()
             else:
-                # Fallback if no clear separator is found; use the whole generated text as the question
                 question_text = generated_text.strip()
-
-            # Optionally, remove any extraneous instructions, e.g., "Please provide your response in..."
             if "Please provide your response" in question_text:
                 question_text = question_text.split("Please provide your response")[0].strip()
-
         except IndexError as e:
             print(f"Error parsing generated OE question: {e}")
             question_text = "Unable to generate a valid question."
-
 
     # Create the QuizQuestion instance
     new_question = QuizQuestion.objects.create(
@@ -233,6 +226,7 @@ def generate_and_save_question(topic, topic_text, question_type="MC"):
             )
 
     return new_question
+
 
 
 
