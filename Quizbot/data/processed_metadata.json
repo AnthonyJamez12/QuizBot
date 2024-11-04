@@ -1,0 +1,12 @@
+{
+    "Lecture_3_slides.pdf": {
+        "last_modified": 1730687982.3257792,
+        "file_id": 21547908,
+        "content": "Security attack\u2022Definition: any action that compromises the security of information owned by an organization\u2022Two types of security attacks\u2022Passive attack\u2022Active attack\nPassive attack\u2022i.e.eavesdropping"
+    },
+    "Lecture_4_slides.pdf": {
+        "last_modified": 1730687991.4386668,
+        "file_id": 95622615,
+        "content": "Know Your Threat Model\u2022Threat model:A model of who your attacker is and what resources they have\u2022One of the best ways to counter an attacker is to attack their reasonsStory\u2026\u2022The bear race\u2022Takeaway:Eve"
+    }
+}

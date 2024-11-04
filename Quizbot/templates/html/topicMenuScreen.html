@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select a Topic</title>
+    <link rel="stylesheet" href="{% static 'css/topicMenuScreen.css' %}">
+</head>
+<body>
+    <div class="container">
+        <h1>Choose a Topic</h1>
+        <ul>
+            {% for topic in topics %}
+                <li><a href="{% url 'quiz_screen_topic' 'focused' topic.id %}">{{ topic.name }}</a></li>
+            {% endfor %}
+        </ul>
+    </div>
+</body>
+</html>

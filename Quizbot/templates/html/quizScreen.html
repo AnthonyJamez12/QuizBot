@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ topic }} Quiz</title>
+    <link rel="stylesheet" href="{% static 'css/quizScreen.css' %}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>{{ topic }} Quiz</h1>
+        
+        {% if questions %}
+            <div id="quiz-section">
+                {% for question in questions %}
+                    <div class="question" data-question-id="{{ question.id }}">
+                        <p><strong>Question:</strong> {{ question.text }}</p>
+                        
+                        {% if question.question_type == 'MC' or question.question_type == 'TF' %}
+                            <form class="answer-form">
+                                {% for option in question.options.all %}
+                                    <label>
+                                        <input type="radio" name="answer-{{ question.id }}" value="{{ option.id }}">
+                                        {{ option.text }}
+                                    </label>
+                                {% endfor %}
+                                <button type="button" onclick="submitAnswer({{ question.id }})">Submit Answer</button>
+                            </form>
+                        {% elif question.question_type == 'OE' %}
+                            <form class="answer-form">
+                                <textarea name="open_ended_response" rows="3" placeholder="Type your answer here..." style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ddd;"></textarea><br>
+                                <button type="button" onclick="submitAnswer({{ question.id }})">Submit Answer</button>
+                            </form>
+                        {% endif %}
+                        
+                        <p class="feedback" id="feedback-{{ question.id }}"></p>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p>No questions available for this quiz.</p>
+        {% endif %}
+        
+        <a href="{% url 'main_menu' %}" class="back-button">Back to Main Menu</a>
+    </div>
+
+    <script>
+        function submitAnswer(questionId) {
+            const questionElement = document.querySelector(`.question[data-question-id="${questionId}"]`);
+            const feedbackElement = document.getElementById(`feedback-${questionId}`);
+            let data = {
+                'question_id': questionId,
+            };
+            
+            const answerForm = questionElement.querySelector('.answer-form');
+            const selectedOption = answerForm.querySelector(`input[name="answer-${questionId}"]:checked`);
+            const openEndedResponse = answerForm.querySelector('textarea[name="open_ended_response"]');
+
+            if (selectedOption) {
+                data['selected_option_id'] = selectedOption.value;
+            } else if (openEndedResponse) {
+                data['open_ended_response'] = openEndedResponse.value;
+            }
+
+            $.ajax({
+                url: "{% url 'submit_answer' %}",
+                type: "POST",
+                data: data,
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                success: function(response) {
+                    feedbackElement.innerHTML = response.feedback;
+                    feedbackElement.className = response.correct ? 'feedback correct' : 'feedback incorrect';
+                },
+                error: function(xhr) {
+                    feedbackElement.innerHTML = "There was an error submitting your answer.";
+                    feedbackElement.className = 'feedback error';
+                }
+            });
+        }
+    </script>
+</body>
+</html>

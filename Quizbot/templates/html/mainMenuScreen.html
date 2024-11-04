@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Menu</title>
+    <link rel="stylesheet" href="{% static 'css/mainMenuScreen.css' %}">
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome to the Quiz Bot</h1>
+        <p class="subheading">Select a quiz type to begin:</p>
+        <div class="button-container">
+            <!-- Pass 'general' as the quiz_type for the General Quiz -->
+            <a href="{% url 'quiz_screen' 'general' %}" class="quiz-button">General Quiz</a>
+            <a href="{% url 'topic_menu' %}" class="quiz-button">Focused Quiz<br><span class="subtitle">(Specific Network Security Topics)</span></a>
+        </div>
+    </div>
+</body>
+</html>
