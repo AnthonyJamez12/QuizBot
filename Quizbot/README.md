@@ -19,7 +19,8 @@ The system processes PDF lecture slides, converts text to embeddings, and stores
 ## Prerequisites and Requirements
 
 1. **Python** (version >= 3.8)
-2. **Libraries**:
+2. **Django** (version >= 3.0)
+3. **Libraries**:
    - `PyPDF2`
    - `Sentence Transformers`
    - `FAISS`
@@ -27,13 +28,14 @@ The system processes PDF lecture slides, converts text to embeddings, and stores
 
 To install dependencies, use:
 ```bash
-pip install PyPDF2 sentence-transformers faiss-cpu gpt4all
+pip install django PyPDF2 sentence-transformers faiss-cpu gpt4all
 ```
 
 For systems with CUDA support:
 ```bash
 pip install "gpt4all[cuda]"
 ```
+
 
 ### Model Setup
 To avoid using primary disk space, download the `GPT4All` model to a specified path (e.g., `D:/GPT4AllModels`). This path can be modified in the code as follows:
