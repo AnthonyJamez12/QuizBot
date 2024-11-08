@@ -26,14 +26,15 @@ def topic_menu_screen(request):
     return render(request, 'html/topicMenuScreen.html', {'topics': topics})  # Pass topics to the template
 
 
+from django.shortcuts import render, get_object_or_404
+from django.http import JsonResponse
+from .models import Topic, QuizQuestion, AnswerOption, UserResponse
+from .gpt4all_integration import generate_question, vector_db
+from .utils import embed_text, load_metadata
+#from .gpt4all_integration import evaluate_open_ended_response  # Import the evaluation function
 
-
-
-
-
-
-
-
+dimension = 384  # Ensure the dimension matches the Sentence Transformer model you're using
+vector_db = VectorDB(dimension=dimension)
 
 
 
@@ -46,7 +47,6 @@ def submit_answer(request):
     question_id = request.POST.get('question_id')
     selected_option_id = request.POST.get('selected_option_id')
     open_ended_response = request.POST.get('open_ended_response')
-
     question = get_object_or_404(QuizQuestion, id=question_id)
 
     # Handling Multiple Choice or True/False Questions
@@ -54,7 +54,7 @@ def submit_answer(request):
         selected_option = get_object_or_404(AnswerOption, id=selected_option_id)
         correct = selected_option.is_correct
     elif question.question_type == 'OE':
-        # For Open-Ended, we would ideally use some logic or LLM-based evaluation here.
+        # For Open-Ended, use AI to evaluate the response
         correct = evaluate_open_ended_response(question, open_ended_response)
     else:
         return JsonResponse({'error': 'Invalid question type.'}, status=400)
@@ -73,12 +73,12 @@ def submit_answer(request):
 
 def evaluate_open_ended_response(question, response):
     """
-    Evaluates open-ended responses; this is a placeholder.
-    You might integrate more complex logic here, such as LLM analysis.
+    Evaluates open-ended responses using GPT4All.
     """
-    keywords = ["example_keyword"]  # Replace with relevant keywords or LLM-based evaluation
-    response_lower = response.lower()
-    return "example_keyword" in response.lower()  # Simple keyword check for now
+    prompt = f"Evaluate the following response to the question '{question.text}': {response}"
+    from .gpt4all_integration import evaluate_open_ended_response as evaluate_response
+    evaluation = evaluate_response(question.text, response)
+    return evaluation  # Adjust this logic based on the AI's response format
 
 
 def topic_quiz(request, topic):
@@ -135,11 +135,15 @@ def quiz_screen(request, quiz_type, topic_id=None):
 
 
 
+from django.db.models import Q
+
 def generate_and_save_question(topic, topic_text, question_type="MC"):
     print('question_type', question_type)
     if question_type == "MC":
         prompt = (
             f"Create a multiple choice quiz question on the topic: '{topic_text}'. "
+            "Do not make a question about firewalls. "
+            "Do not include the answer in the question. "
             "Include four options labeled A, B, C, and D, and specify the correct answer at the end. "
             "Format: 'Question: {question text} A) {option 1} B) {option 2} C) {option 3} D) {option 4} "
             "The correct answer is {correct option}.'"
@@ -158,7 +162,6 @@ def generate_and_save_question(topic, topic_text, question_type="MC"):
 
     generated_text = generate_question(prompt)
     print('Generated text:', generated_text)
-
     question_text = ""
     options = []
     correct_option_letter = ""
@@ -177,7 +180,6 @@ def generate_and_save_question(topic, topic_text, question_type="MC"):
         except IndexError as e:
             print(f"Error parsing generated MC question: {e}")
             question_text = "Unable to generate a valid question."
-
     elif question_type == "TF":
         try:
             question_text = generated_text.split("Question:")[1].split("The correct answer is")[0].strip()
@@ -186,7 +188,6 @@ def generate_and_save_question(topic, topic_text, question_type="MC"):
         except IndexError as e:
             print(f"Error parsing generated TF question: {e}")
             question_text = "Unable to generate a valid question."
-
     elif question_type == "OE":
         try:
             if "Here's your open-ended question:" in generated_text:
@@ -200,6 +201,11 @@ def generate_and_save_question(topic, topic_text, question_type="MC"):
         except IndexError as e:
             print(f"Error parsing generated OE question: {e}")
             question_text = "Unable to generate a valid question."
+
+    # Check for duplicate questions
+    if QuizQuestion.objects.filter(Q(text=question_text) & Q(topic=topic)).exists():
+        print("Duplicate question detected. Generating a new question.")
+        return generate_and_save_question(topic, topic_text, question_type)
 
     # Create the QuizQuestion instance
     new_question = QuizQuestion.objects.create(
@@ -226,7 +232,6 @@ def generate_and_save_question(topic, topic_text, question_type="MC"):
             )
 
     return new_question
-
 
 
 
