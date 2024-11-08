@@ -167,7 +167,41 @@ During integration with FAISS, we encountered errors with `add_with_ids`, necess
 **Solution**: 
 Switching to `IndexFlatL2` in FAISS resolved the issue, enabling `add_with_ids` to function correctly and ensuring each PDF’s embeddings remain distinct and easily retrievable.
 
+---
+
+## Django Admin Setup and Access
+
+The Django admin interface allows you to manage your application’s data with ease. To set it up:
+
+1. **Create a Superuser**:
+   - Open your terminal, navigate to your project directory, and run the following command:
+     ```bash
+     python manage.py createsuperuser
+     ```
+   - Django will prompt you to enter a username, email address, and password for this admin account. Choose a secure password and remember your credentials, as you’ll use these to log in to the admin panel.
+
+2. **Access the Admin Interface**:
+   - Start the Django development server with:
+     ```bash
+     python manage.py runserver
+     ```
+   - Open your browser and go to `http://127.0.0.1:8000/admin`. This is the default URL for the Django admin panel.
+   - Log in with the credentials you created for the superuser.
 
 ---
+
+## Accessing the SQLite Database
+
+In the same directory as the db.sqlite3, you can manipulate data through the shell:
+
+1. **Using the Django Shell**:
+   - You can use Django’s interactive shell to access database data:
+     ```bash
+     python manage.py shell
+     ```
+
+---
+
+
 
 This README provides a comprehensive guide to setting up, running, and understanding the architecture of QuizBot. For further details, refer to the inline documentation within the repository.
