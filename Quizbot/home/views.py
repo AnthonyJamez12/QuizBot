@@ -152,7 +152,7 @@ def generate_and_save_question(topic, topic_text, question_type="MC"):
         prompt = (
             f"Create a single True/False question on the topic: '{topic_text}'. "
             "Provide the question text and the correct answer as either True or False. "
-            "Only give one question in this format: 'Question: {question text} The correct answer is {True/False}.'"
+            "Only give one question in this format: 'Question: {question text} The correct answer is {True/False}'"
         )
     elif question_type == "OE":
         prompt = (
@@ -184,6 +184,7 @@ def generate_and_save_question(topic, topic_text, question_type="MC"):
         try:
             question_text = generated_text.split("Question:")[1].split("The correct answer is")[0].strip()
             correct_answer = generated_text.split("The correct answer is")[1].strip().lower()
+            print('correct_answer', correct_answer)
             options = [("True", correct_answer == "true"), ("False", correct_answer == "false")]
         except IndexError as e:
             print(f"Error parsing generated TF question: {e}")
@@ -224,18 +225,41 @@ def generate_and_save_question(topic, topic_text, question_type="MC"):
                 is_correct=is_correct
             )
     elif question_type == "TF":
-        for option_text, is_correct in options:
-            AnswerOption.objects.create(
-                question=new_question,
-                text=option_text,
-                is_correct=is_correct
-            )
+        try:
+            # Extract question text and clean correct answer
+            question_text = generated_text.split("Question:")[1].split("The correct answer is")[0].strip()
+            correct_answer = generated_text.split("The correct answer is")[1].strip(" '")
+
+            # Normalize the case of the answer and remove any trailing period
+            correct_answer = correct_answer.capitalize().rstrip('.')
+
+            # Debug print statements
+            print(f"Extracted question text: {question_text}")
+            print("Cleaned correct answer for TF question:", correct_answer, "Spaces might be in correct answer")
+
+            # Define the options with is_correct values set according to correct_answer
+            options = [
+                ("True", correct_answer == "True"),
+                ("False", correct_answer == "False")
+            ]
+
+            # Confirm parsed information
+            print(f"Options with is_correct values: {options}")
+
+            # Create AnswerOption instances for True/False
+            for option_text, is_correct in options:
+                print(f"Creating AnswerOption - Text: {option_text}, Is Correct: {is_correct}")
+                AnswerOption.objects.create(
+                    question=new_question,
+                    text=option_text,
+                    is_correct=is_correct
+                )
+
+        except IndexError as e:
+            print(f"Error parsing generated TF question: {e}")
+            question_text = "Unable to generate a valid question."
 
     return new_question
-
-
-
-
 
 
 def generate_question_view(request):
